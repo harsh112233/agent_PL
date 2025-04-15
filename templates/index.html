@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Home Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+  <div class="max-w-3xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl">
+    <h1 class="text-2xl font-bold mb-4">🏡 AI Home Assistant</h1>
+
+    <div id="chat-box" class="h-96 overflow-y-auto mb-4 p-4 bg-gray-50 border rounded">
+      {% for message in chat_history %}
+        <div class="mb-2">
+          <strong class="{{ 'text-blue-600' if message.role == 'user' else 'text-green-600' }}">
+            {{ 'You' if message.role == 'user' else 'AI' }}:
+          </strong>
+          <span>{{ message.text }}</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form id="chat-form" class="flex flex-col gap-4" enctype="multipart/form-data">
+      <input type="text" name="message" id="message" placeholder="Type your question..." class="border p-2 rounded w-full" required />
+      <input type="file" name="image" id="image" accept="image/*" class="text-sm text-gray-600" />
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
+    </form>
+
+    <form action="/reset" method="POST" class="mt-4">
+      <button type="submit" class="text-red-500 hover:underline text-sm">Reset chat</button>
+    </form>
+  </div>
+
+  <script>
+    const chatForm = document.getElementById("chat-form");
+    const chatBox = document.getElementById("chat-box");
+
+    chatForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const messageInput = document.getElementById("message");
+      const imageInput = document.getElementById("image");
+      const userMessage = messageInput.value;
+
+      // Append user message to chat box
+      const userDiv = document.createElement("div");
+      userDiv.classList.add("mb-2");
+      userDiv.innerHTML = `<strong class="text-blue-600">You:</strong> ${userMessage}`;
+      chatBox.appendChild(userDiv);
+
+      const formData = new FormData();
+      formData.append("message", userMessage);
+      if (imageInput.files.length > 0) {
+        formData.append("image", imageInput.files[0]);
+      }
+
+      messageInput.value = "";
+      imageInput.value = "";
+
+      const response = await fetch("/chat", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+
+      // Append AI response to chat box
+      const aiDiv = document.createElement("div");
+      aiDiv.classList.add("mb-2");
+      aiDiv.innerHTML = `<strong class="text-green-600">AI:</strong> ${data.response}`;
+      chatBox.appendChild(aiDiv);
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
+</body>
+</html>
